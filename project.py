@@ -48,6 +48,16 @@ def editCategory(category_id):
     else:
         return render_template("newcategory.html",category=category_to_edit)
 
+# Delete a Category
+@app.route(
+    '/category/<int:category_id>/delete/', methods=['GET'])
+def deleteCategory(category_id):
+    category_to_delete = session.query(Category).filter_by(id=category_id).one()
+    session.delete(category_to_delete)
+    session.commit()
+    return redirect(url_for('showCategories'))
+
+
 # Create new item
 @app.route(
     '/category/<int:category_id>/item/new/', methods=['GET', 'POST'])
@@ -76,6 +86,16 @@ def editItem(category_id,item_id):
         return redirect(url_for('showCategories'))
     else:
         return render_template("newitem.html",item=item_to_edit)
+
+# Delete an Item
+@app.route(
+    '/category/<int:category_id>/<int:item_id>/delete/', methods=['GET', 'POST'])
+def deleteItem(category_id,item_id):
+    item_to_edit = session.query(Item).filter_by(id=item_id).one()
+    session.delete(item_to_edit)
+    session.commit()
+    return redirect(url_for('showCategories'))
+
 
 
 if __name__ == '__main__':
