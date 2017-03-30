@@ -66,8 +66,6 @@ def newItem(category_id):
         return render_template("newitem.html")
 
 # Edit an Item
-
-#Edit a Category
 @app.route(
     '/category/<int:category_id>/<int:item_id>/edit/', methods=['GET', 'POST'])
 def editItem(category_id,item_id):
