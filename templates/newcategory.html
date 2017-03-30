@@ -6,10 +6,11 @@
     <form action="" method="post">
 
       <p>New Category:</p>
-        <input type ='text' name='name'>
+        <input type ='text' name='name' {% if category %} placeholder = '{{ category.name }}' {% endif %}>
 
 
     <input type='submit' value='submit'>
+    </form>
 
   </body>
 </html>

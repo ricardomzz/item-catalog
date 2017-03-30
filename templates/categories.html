@@ -3,8 +3,16 @@
 
   {% for category in categories %}
 
-  <p> {{ category.name }} </p>
+    <h2> {{ category.name }} </h2>
+      {% for item in category.items %}
+        <p>{{ item.name }}</p>
+      {% endfor %}
+
+
+
+    <a href = "{{url_for('newItem', category_id = category.id )}}">Create New Item</a>
+    <a href = "{{url_for('editCategory', category_id = category.id )}}">Edit Category</a>
 
   {% endfor %}
-  
+
 {% endblock %}

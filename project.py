@@ -37,6 +37,33 @@ def showCategories():
     # return "This page will show all my categories"
     return render_template('categories.html', categories=categories)
 
+#Edit a Category
+@app.route(
+    '/category/<int:category_id>/edit/', methods=['GET', 'POST'])
+def editCategory(category_id):
+    category_to_edit = session.query(Category).filter_by(id=category_id).one()
+    if request.method == 'POST':
+        category_to_edit.name = request.form['name']
+        return redirect(url_for('showCategories'))
+    else:
+        return render_template("newcategory.html",category=category_to_edit)
+
+# Create new item
+@app.route(
+    '/category/<int:category_id>/item/new/', methods=['GET', 'POST'])
+def newItem(category_id):
+    if request.method == 'POST':
+        newItem = Item(name=request.form['name'],
+        description=request.form['description'],category_id=category_id)
+        session.add(newItem)
+        try:
+            session.commit()
+            return redirect("/category")
+        except IntegrityError:
+            session.rollback();
+            return "IntegrityError"
+    else:
+        return render_template("newitem.html")
 
 
 
