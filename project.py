@@ -65,7 +65,19 @@ def newItem(category_id):
     else:
         return render_template("newitem.html")
 
+# Edit an Item
 
+#Edit a Category
+@app.route(
+    '/category/<int:category_id>/<int:item_id>/edit/', methods=['GET', 'POST'])
+def editItem(category_id,item_id):
+    item_to_edit = session.query(Item).filter_by(id=item_id).one()
+    if request.method == 'POST':
+        item_to_edit.name = request.form['name']
+        item_to_edit.description = request.form['description']
+        return redirect(url_for('showCategories'))
+    else:
+        return render_template("newitem.html",item=item_to_edit)
 
 
 if __name__ == '__main__':

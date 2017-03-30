@@ -6,8 +6,8 @@
     <form action="" method="post">
 
       <p>New Item:</p>
-        <input type ='text' name='name' placeholder = '{{item.name }}'>
-        <input type ='text' name='description' placeholder = '{{item.description }}'>
+        <input type ='text' name='name' {% if item %} placeholder = '{{ item.name }}' {% endif %}>
+        <input type ='text' name='description' {% if item %} placeholder = '{{ item.description }}' {% endif %}>
 
 
     <input type='submit' value='submit'>
