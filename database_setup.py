@@ -35,13 +35,13 @@ class Item(Base):
 
     @property
     def serialize(self):
-        """Return object data in easily  format"""
+        """Return object data in serializeable format"""
         return {
             'name': self.name,
-            'description': self.description,
             'id': self.id,
-            'price': self.price,
-            'course': self.course,
+            'description': self.description,
+            'category': self.category.name,
+            'category_id': self.category_id
         }
 
 
