@@ -2,12 +2,81 @@
 <html>
   <head>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js">
+    </script>
+    <script src="https://apis.google.com/js/client:platform.js?onload=start" async defer>
+    </script>
+    <script>
+      function start() {
+        gapi.load('auth2', function() {
+          auth2 = gapi.auth2.init({
+            client_id: '851102550080-q8tdecempga1t1rv9auat64s69pbt356.apps.googleusercontent.com',
+            // Scopes to request in addition to 'profile' and 'email'
+            //scope: 'additional_scope'
+          });
+        });
+      }
+    </script>
     <title></title>
   </head>
   <body>
-    <h1>layout template</h1>
+    {% if session %}
+    <a href='/gdisconnect'>log out</a>
+    {% else %}
+    <button id="signinButton">Sign in with Google</button>
+    <script>
+      $('#signinButton').click(function() {
+        // signInCallback defined in step 6.
+        auth2.grantOfflineAccess().then(signInCallback);
+      });
+    </script>
+    {% endif %}
+    <h1>LAYOUT HEADER </h1>
+    {% if session %}<h4>logged in: {{ session['userid'] }} </h4>{% endif %}
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages%}
+        <ul>
+        {% for message in messages %}
+          <li>{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
     <div id="content">{% block content %}{% endblock %}</div>
     <div id="footer">
     </div>
+    <script>
+    function signInCallback(authResult) {
+      if (authResult['code']) {
+
+        // Hide the sign-in button now that the user is authorized, for example:
+        $('#signinButton').attr('style', 'display: none');
+
+        // Send the code to the server
+        $.ajax({
+          type: 'POST',
+          url: '/gconnect',
+          // Always include an `X-Requested-With` header in every AJAX request,
+          // to protect against CSRF attacks.
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          contentType: 'application/octet-stream; charset=utf-8',
+          success: function(result) {
+            // Handle or verify the server response.
+            console.log(result)
+            window.location.href = "/";
+          },
+          processData: false,
+          data: authResult['code']
+        });
+      } else {
+        // There was an error.
+      }
+    }
+    </script>
+    <h4>session info</h4>
+    {% if session %}<p> {{ session['credentials'] }} </p>{% endif %}
   </body>
 </html>
