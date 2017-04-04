@@ -20,7 +20,7 @@
     <title></title>
   </head>
   <body>
-    {% if session %}
+    {% if session['access_token'] %}
     <a href='/gdisconnect'>log out</a>
     {% else %}
     <button id="signinButton">Sign in with Google</button>
@@ -76,7 +76,5 @@
       }
     }
     </script>
-    <h4>session info</h4>
-    {% if session %}<p> {{ session['credentials'] }} </p>{% endif %}
   </body>
 </html>

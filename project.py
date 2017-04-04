@@ -22,6 +22,9 @@ Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
+CLIENT_ID = json.loads(
+    open('client_secret.json', 'r').read())['web']['client_id']
+
 def require_login(function):
     @wraps(function)
     def wrapper(*args,**kwargs):
@@ -29,6 +32,19 @@ def require_login(function):
             flash('login required')
             return redirect('/')
         else:
+            #check that access token is valid
+            access_token = login_session['access_token']
+            url = ('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s' %access_token)
+            h=httplib2.Http()
+            result = json.loads(h.request(url, 'GET')[1])
+            if result.get('error' is not None):
+                flash('Authentication error, please try logging in again.')
+                return redirect('/')
+            #check if token is valid for this application
+            if result['issued_to'] != CLIENT_ID:
+                flash('Authentication error, please try logging in again.')
+                return redirect('/')
+
             return function(*args,**kwargs)
     return wrapper
 
@@ -53,14 +69,13 @@ def gconnect():
 
     # Call Google API
     http_auth = credentials.authorize(httplib2.Http())
-    #drive_service = discovery.build('drive', 'v3', http=http_auth)
-    #appfolder = drive_service.files().get(fileId='appfolder').execute()
 
     # Get profile info from ID token
     userid = credentials.id_token['sub']
     email = credentials.id_token['email']
-    login_session['credentials'] = credentials.to_json()
+    login_session['access_token'] = credentials.access_token
     login_session['userid'] = userid
+    login_session['email'] = email
     flash('logged in as %s' %login_session['userid'])
     return userid
 
@@ -83,6 +98,7 @@ def newCategory():
             session.rollback();
             return "IntegrityError"
     else:
+        flash('logged in with userid %s' %login_session['userid'])
         return render_template("newcategory.html")
 
 # Show all categories
@@ -95,6 +111,7 @@ def showCategories():
 #Edit a Category
 @app.route(
     '/category/<int:category_id>/edit/', methods=['GET', 'POST'])
+@require_login
 def editCategory(category_id):
     category_to_edit = session.query(Category).filter_by(id=category_id).one()
     if request.method == 'POST':
@@ -106,6 +123,7 @@ def editCategory(category_id):
 # Delete a Category
 @app.route(
     '/category/<int:category_id>/delete/', methods=['GET'])
+@require_login
 def deleteCategory(category_id):
     category_to_delete = session.query(Category).filter_by(id=category_id).one()
     session.delete(category_to_delete)
@@ -116,6 +134,7 @@ def deleteCategory(category_id):
 # Create new item
 @app.route(
     '/category/<int:category_id>/item/new/', methods=['GET', 'POST'])
+@require_login
 def newItem(category_id):
     if request.method == 'POST':
         newItem = Item(name=request.form['name'],
@@ -133,6 +152,7 @@ def newItem(category_id):
 # Edit an Item
 @app.route(
     '/category/<int:category_id>/<int:item_id>/edit/', methods=['GET', 'POST'])
+@require_login
 def editItem(category_id,item_id):
     item_to_edit = session.query(Item).filter_by(id=item_id).one()
     if request.method == 'POST':
@@ -145,6 +165,7 @@ def editItem(category_id,item_id):
 # Delete an Item
 @app.route(
     '/category/<int:category_id>/<int:item_id>/delete/', methods=['GET', 'POST'])
+@require_login
 def deleteItem(category_id,item_id):
     item_to_edit = session.query(Item).filter_by(id=item_id).one()
     session.delete(item_to_edit)
