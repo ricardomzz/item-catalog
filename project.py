@@ -29,13 +29,16 @@ CLIENT_ID = json.loads(
 def require_login(function):
     @wraps(function)
     def wrapper(*args,**kwargs):
-        if 'userid' not in login_session:
+        if 'GoogleUID' not in login_session:
             flash('login required')
             return redirect('/')
         else:
             #check that access token is valid
             access_token = login_session['access_token']
-            url = ('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s' %access_token)
+            url = (
+            'https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s'
+            %access_token)
+
             h=httplib2.Http()
             result = json.loads(h.request(url, 'GET')[1])
             if result.get('error' is not None):
@@ -49,17 +52,41 @@ def require_login(function):
             return function(*args,**kwargs)
     return wrapper
 
+def require_ownership(function):
+    @wraps(function)
+    def wrapper(**kwargs):
+        if 'item_id' in kwargs:
+            item_id=kwargs['item_id']
+            obj = session.query(Item).filter_by(id=item_id).one()
+
+        elif 'category_id' in kwargs:
+            category_id = kwargs['category_id']
+            obj = session.query(Category).filter_by(id=category_id).one()
+
+        user = getUserInfo(login_session)
+
+        if user.id == obj.user.id:
+            return function(**kwargs)
+
+        else:
+            flash('You must own this object to perform this action.')
+            return redirect('/')
+
+    return wrapper
+
 
 def createUser(login_session):
-    newUser = User(GoogleUID = login_session['userid'])
+    newUser = User(GoogleUID = login_session['GoogleUID'])
     session.add(newUser)
     session.commit()
-    user = session.query(User).filter_by(GoogleUID = login_session['userid']).one()
+    user = session.query(User).filter_by(GoogleUID = login_session['GoogleUID']
+    ).one()
     return user
 
 
 def getUserInfo(login_session):
-    user = session.query(User).filter_by(GoogleUID = login_session['userid']).one()
+    user = session.query(User).filter_by(GoogleUID = login_session['GoogleUID']
+    ).one()
     return user
 
 
@@ -86,11 +113,9 @@ def gconnect():
     http_auth = credentials.authorize(httplib2.Http())
 
     # Get profile info from ID token
-    userid = credentials.id_token['sub']
-    email = credentials.id_token['email']
+    GoogleUID = credentials.id_token['sub']
     login_session['access_token'] = credentials.access_token
-    login_session['userid'] = userid
-    login_session['email'] = email
+    login_session['GoogleUID'] = GoogleUID
 
     # See if a user exists, if it doesn't make a new one
     try:
@@ -98,13 +123,22 @@ def gconnect():
     except NoResultFound:
         user = createUser(login_session)
 
-    flash('logged in as %s' %user.GoogleUID)
-    return userid
+    flash('logged in')
+    return user.GoogleUID
 
 @app.route('/gdisconnect', methods=['GET'])
 def gdisconnect():
-    login_session.clear()
-    return redirect('/')
+    access_token = login_session['access_token']
+    url = 'https://accounts.google.com/o/oauth2/revoke?token=%s' % access_token
+    h = httplib2.Http()
+    result = h.request(url, 'GET')[0]
+    if result['status'] == '200':
+        login_session.clear()
+        flash('logged out')
+        return redirect('/')
+    else:
+        flash('error logging out')
+        return redirect('/')
 
 # Create a new category
 @app.route('/category/new/', methods=['GET', 'POST'])
@@ -121,7 +155,6 @@ def newCategory():
             session.rollback();
             return "IntegrityError"
     else:
-        flash('logged in with userid %s' %login_session['userid'])
         return render_template("newcategory.html")
 
 # Show all categories
@@ -135,6 +168,7 @@ def showCategories():
 @app.route(
     '/category/<int:category_id>/edit/', methods=['GET', 'POST'])
 @require_login
+@require_ownership
 def editCategory(category_id):
     category_to_edit = session.query(Category).filter_by(id=category_id).one()
     if request.method == 'POST':
@@ -147,6 +181,7 @@ def editCategory(category_id):
 @app.route(
     '/category/<int:category_id>/delete/', methods=['GET'])
 @require_login
+@require_ownership
 def deleteCategory(category_id):
     category_to_delete = session.query(Category).filter_by(id=category_id).one()
     session.delete(category_to_delete)
@@ -162,7 +197,8 @@ def newItem(category_id):
     if request.method == 'POST':
         user = getUserInfo(login_session)
         newItem = Item(name=request.form['name'],
-        description=request.form['description'],category_id=category_id,user_id=user.id)
+            description=request.form['description'],
+            category_id=category_id,user_id=user.id)
         session.add(newItem)
         try:
             session.commit()
@@ -177,6 +213,7 @@ def newItem(category_id):
 @app.route(
     '/category/<int:category_id>/<int:item_id>/edit/', methods=['GET', 'POST'])
 @require_login
+@require_ownership
 def editItem(category_id,item_id):
     item_to_edit = session.query(Item).filter_by(id=item_id).one()
     if request.method == 'POST':
@@ -188,8 +225,10 @@ def editItem(category_id,item_id):
 
 # Delete an Item
 @app.route(
-    '/category/<int:category_id>/<int:item_id>/delete/', methods=['GET', 'POST'])
+    '/category/<int:category_id>/<int:item_id>/delete/',
+    methods=['GET', 'POST'])
 @require_login
+@require_ownership
 def deleteItem(category_id,item_id):
     item_to_edit = session.query(Item).filter_by(id=item_id).one()
     session.delete(item_to_edit)
