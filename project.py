@@ -1,8 +1,9 @@
 from flask import Flask, render_template, request, redirect, jsonify, url_for, flash
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.exc import IntegrityError
-from database_setup import Base, Category, Item
+from database_setup import Base, Category, Item, User
 from flask import session as login_session
 
 from apiclient import discovery
@@ -48,6 +49,20 @@ def require_login(function):
             return function(*args,**kwargs)
     return wrapper
 
+
+def createUser(login_session):
+    newUser = User(GoogleUID = login_session['userid'])
+    session.add(newUser)
+    session.commit()
+    user = session.query(User).filter_by(GoogleUID = login_session['userid']).one()
+    return user
+
+
+def getUserInfo(login_session):
+    user = session.query(User).filter_by(GoogleUID = login_session['userid']).one()
+    return user
+
+
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
     # (Receive auth_code by HTTPS POST)
@@ -76,7 +91,14 @@ def gconnect():
     login_session['access_token'] = credentials.access_token
     login_session['userid'] = userid
     login_session['email'] = email
-    flash('logged in as %s' %login_session['userid'])
+
+    # See if a user exists, if it doesn't make a new one
+    try:
+        user = getUserInfo(login_session)
+    except NoResultFound:
+        user = createUser(login_session)
+
+    flash('logged in as %s' %user.GoogleUID)
     return userid
 
 @app.route('/gdisconnect', methods=['GET'])
@@ -89,7 +111,8 @@ def gdisconnect():
 @require_login
 def newCategory():
     if request.method == 'POST':
-        newCategory = Category(name=request.form['name'])
+        user = getUserInfo(login_session)
+        newCategory = Category(name=request.form['name'],user_id=user.id)
         session.add(newCategory)
         try:
             session.commit()
@@ -137,8 +160,9 @@ def deleteCategory(category_id):
 @require_login
 def newItem(category_id):
     if request.method == 'POST':
+        user = getUserInfo(login_session)
         newItem = Item(name=request.form['name'],
-        description=request.form['description'],category_id=category_id)
+        description=request.form['description'],category_id=category_id,user_id=user.id)
         session.add(newItem)
         try:
             session.commit()

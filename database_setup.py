@@ -7,12 +7,19 @@ from sqlalchemy import create_engine
 
 Base = declarative_base()
 
+class User(Base):
+    __tablename__ = 'User'
+
+    id = Column(Integer, primary_key=True)
+    GoogleUID = Column(String(250), nullable=False, unique=True)
 
 class Category(Base):
     __tablename__ = 'Category'
 
     id = Column(Integer, primary_key=True)
     name = Column(String(250), nullable=False, unique=True)
+    user_id = Column(Integer, ForeignKey('User.id'))
+    user = relationship(User,backref=backref('categories', lazy='dynamic'))
 
 
     @property
@@ -32,6 +39,8 @@ class Item(Base):
     description = Column(String(250))
     category_id = Column(Integer, ForeignKey('Category.id'))
     category = relationship(Category,backref=backref('items', lazy='dynamic'))
+    user_id = Column(Integer, ForeignKey('User.id'))
+    user = relationship(User,backref=backref('items', lazy='dynamic'))
 
     @property
     def serialize(self):
