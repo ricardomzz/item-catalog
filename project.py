@@ -93,6 +93,7 @@ def getUserInfo(login_session):
 
 
 @app.route('/gconnect', methods=['POST'])
+#modified from developers.google.com
 def gconnect():
     # (Receive auth_code by HTTPS POST)
     auth_code=request.data
