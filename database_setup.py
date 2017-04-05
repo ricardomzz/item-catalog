@@ -28,6 +28,9 @@ class Category(Base):
         return {
             'name': self.name,
             'id': self.id,
+            'user': self.user.GoogleUID,
+            'user_id': self.user_id,
+            'items': [i.serialize for i in self.items]
         }
 
 
@@ -50,7 +53,9 @@ class Item(Base):
             'id': self.id,
             'description': self.description,
             'category': self.category.name,
-            'category_id': self.category_id
+            'category_id': self.category_id,
+            'user': self.user.GoogleUID,
+            'user_id': self.user_id
         }
 
 

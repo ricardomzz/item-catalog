@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, jsonify, url_for, flash
+from flask import Flask, render_template, request, redirect, jsonify, url_for, flash, jsonify
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
@@ -165,12 +165,24 @@ def showCategories():
     categories = session.query(Category).all()
     return render_template('categories.html', categories=categories)
 
+# Show all categories and items under them in JSON
+@app.route('/json/')
+def showCategoriesJSON():
+    categories = session.query(Category).all()
+    return jsonify(Categories=[c.serialize for c in categories])
+
 #Show a specific category
 @app.route('/category/<int:category_id>/')
 def showCategory(category_id):
     categories = session.query(Category).all()
     category_to_show = session.query(Category).filter_by(id=category_id).one()
     return render_template("categories.html",categories=categories,category=category_to_show)
+
+#Show a specific category and items under it in JSON
+@app.route('/category/<int:category_id>/json/')
+def showCategoryJSON(category_id):
+    category_to_show = session.query(Category).filter_by(id=category_id).one()
+    return jsonify(Category=category_to_show.serialize)
 
 #Edit a Category
 @app.route(
