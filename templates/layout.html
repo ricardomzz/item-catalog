@@ -17,11 +17,12 @@
         });
       }
     </script>
-    <title></title>
+    <title>Item Catalog</title>
   </head>
   <body>
+    <header>
     {% if session['access_token'] %}
-    <a href='/gdisconnect'>log out</a>
+    <button onclick="window.location.href='/gdisconnect'">Log out from Google</button>
     {% else %}
     <button id="signinButton">Sign in with Google</button>
     <script>
@@ -31,20 +32,24 @@
       });
     </script>
     {% endif %}
-    <h1>LAYOUT HEADER </h1>
-    {% if session %}<h4>logged in: {{ session['userid'] }} </h4>{% endif %}
 
-    {% with messages = get_flashed_messages() %}
-      {% if messages%}
-        <ul>
-        {% for message in messages %}
-          <li>{{ message }}</li>
+      <h1>Item Catalog</h1>
+
+    </header>
+    <div id="nav">
+      <ul>
+        <li><a href = "{{url_for('newCategory')}}" id="new_category_link">New Category</a></li>
+        {% for category in categories %}
+
+          <li> <a href="{{url_for('showCategory', category_id = category.id)}}">{{ category.name }}</a> </li>
+
         {% endfor %}
+
         </ul>
-      {% endif %}
-    {% endwith %}
+    </div>
     <div id="content">{% block content %}{% endblock %}</div>
-    <div id="footer">
+    <footer>
+    </footer>
     </div>
     <script>
     function signInCallback(authResult) {

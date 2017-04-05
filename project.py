@@ -26,6 +26,8 @@ session = DBSession()
 CLIENT_ID = json.loads(
     open('client_secret.json', 'r').read())['web']['client_id']
 
+
+
 def require_login(function):
     @wraps(function)
     def wrapper(*args,**kwargs):
@@ -123,7 +125,7 @@ def gconnect():
     except NoResultFound:
         user = createUser(login_session)
 
-    flash('logged in')
+
     return user.GoogleUID
 
 @app.route('/gdisconnect', methods=['GET'])
@@ -134,7 +136,6 @@ def gdisconnect():
     result = h.request(url, 'GET')[0]
     if result['status'] == '200':
         login_session.clear()
-        flash('logged out')
         return redirect('/')
     else:
         flash('error logging out')
@@ -150,19 +151,26 @@ def newCategory():
         session.add(newCategory)
         try:
             session.commit()
-            return redirect("/category")
+            return redirect("/")
         except IntegrityError:
             session.rollback();
             return "IntegrityError"
     else:
-        return render_template("newcategory.html")
+        categories = session.query(Category).all()
+        return render_template("createeditcategory.html",categories=categories)
 
 # Show all categories
 @app.route('/')
-@app.route('/category/')
 def showCategories():
     categories = session.query(Category).all()
     return render_template('categories.html', categories=categories)
+
+#Show a specific category
+@app.route('/category/<int:category_id>/')
+def showCategory(category_id):
+    categories = session.query(Category).all()
+    category_to_show = session.query(Category).filter_by(id=category_id).one()
+    return render_template("categories.html",categories=categories,category=category_to_show)
 
 #Edit a Category
 @app.route(
@@ -171,11 +179,13 @@ def showCategories():
 @require_ownership
 def editCategory(category_id):
     category_to_edit = session.query(Category).filter_by(id=category_id).one()
+    categories = session.query(Category).all()
     if request.method == 'POST':
         category_to_edit.name = request.form['name']
-        return redirect(url_for('showCategories'))
+        return redirect(url_for('showCategory',category_id=category_to_edit.id))
     else:
-        return render_template("newcategory.html",category=category_to_edit)
+
+        return render_template("createeditcategory.html",categories=categories,category=category_to_edit)
 
 # Delete a Category
 @app.route(
@@ -183,10 +193,11 @@ def editCategory(category_id):
 @require_login
 @require_ownership
 def deleteCategory(category_id):
+    categories = session.query(Category).all()
     category_to_delete = session.query(Category).filter_by(id=category_id).one()
     session.delete(category_to_delete)
     session.commit()
-    return redirect(url_for('showCategories'))
+    return redirect(url_for('showCategories',categories=categories))
 
 
 # Create new item
@@ -194,6 +205,7 @@ def deleteCategory(category_id):
     '/category/<int:category_id>/item/new/', methods=['GET', 'POST'])
 @require_login
 def newItem(category_id):
+    categories = session.query(Category).all()
     if request.method == 'POST':
         user = getUserInfo(login_session)
         newItem = Item(name=request.form['name'],
@@ -202,12 +214,12 @@ def newItem(category_id):
         session.add(newItem)
         try:
             session.commit()
-            return redirect("/category")
+            return redirect(url_for('showCategory',category_id=category_id))
         except IntegrityError:
             session.rollback();
             return "IntegrityError"
     else:
-        return render_template("newitem.html")
+        return render_template("createedititem.html",categories=categories)
 
 # Edit an Item
 @app.route(
@@ -216,12 +228,14 @@ def newItem(category_id):
 @require_ownership
 def editItem(category_id,item_id):
     item_to_edit = session.query(Item).filter_by(id=item_id).one()
+
     if request.method == 'POST':
         item_to_edit.name = request.form['name']
         item_to_edit.description = request.form['description']
-        return redirect(url_for('showCategories'))
+        return redirect(url_for('showCategory',category_id=category_id))
     else:
-        return render_template("newitem.html",item=item_to_edit)
+        categories = session.query(Category).all()
+        return render_template("createedititem.html",categories=categories,item=item_to_edit)
 
 # Delete an Item
 @app.route(
@@ -233,7 +247,8 @@ def deleteItem(category_id,item_id):
     item_to_edit = session.query(Item).filter_by(id=item_id).one()
     session.delete(item_to_edit)
     session.commit()
-    return redirect(url_for('showCategories'))
+    categories = session.query(Category).all()
+    return redirect(url_for('showCategory',category_id=category_id))
 
 
 
