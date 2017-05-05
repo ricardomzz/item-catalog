@@ -59,7 +59,7 @@ class Item(Base):
         }
 
 
-engine = create_engine('sqlite:///itemcatalog.db')
+engine = create_engine('sqlite:////var/www/html/item-catalog/itemcatalog.db?check_same_thread=False')
 
 
 Base.metadata.create_all(engine)
