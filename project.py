@@ -15,7 +15,8 @@ from functools import wraps
 
 
 
-app = Flask(__name__)
+application = Flask(__name__)
+app=application
 
 engine = create_engine('sqlite:///itemcatalog.db')
 Base.metadata.bind = engine
@@ -268,4 +269,4 @@ def deleteItem(category_id,item_id):
 if __name__ == '__main__':
     app.secret_key = 'Random_Secret_String'
     app.debug = True
-    app.run(host='0.0.0.0', port=8080)
+    app.run(host='0.0.0.0', port=80)
