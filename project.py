@@ -1,3 +1,5 @@
+import sys
+sys.path.append('/var/www/html/item-catalog')
 from flask import Flask, render_template, request, redirect, jsonify, url_for, flash, jsonify
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -18,14 +20,14 @@ from functools import wraps
 application = Flask(__name__)
 app=application
 
-engine = create_engine('sqlite:///itemcatalog.db')
+engine = create_engine('sqlite:////var/www/html/item-catalog/itemcatalog.db?check_same_thread=False')
 Base.metadata.bind = engine
 
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
 CLIENT_ID = json.loads(
-    open('client_secret.json', 'r').read())['web']['client_id']
+    open('/var/www/html/item-catalog/client_secret.json', 'r').read())['web']['client_id']
 
 
 
@@ -265,8 +267,7 @@ def deleteItem(category_id,item_id):
     return redirect(url_for('showCategory',category_id=category_id))
 
 
-
+app.secret_key = 'Random_Secret_String'
 if __name__ == '__main__':
-    app.secret_key = 'Random_Secret_String'
     app.debug = True
-    app.run(host='0.0.0.0', port=80)
+    app.run(host='0.0.0.0', port=8080)
